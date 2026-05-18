@@ -35,6 +35,7 @@ export NODE_RANK=${NODE_RANK:?NODE_RANK must be set on each node (0..NNODES-1)}
 export MASTER_ADDR=${MASTER_ADDR:?MASTER_ADDR must point to the rank-0 host}
 export MASTER_PORT=${MASTER_PORT:-29500}
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}
+export VLLM_DISABLE_FLASHINFER_ALLREDUCE=1
 
 # Optional: pin NCCL/Gloo to a specific NIC if the cluster has multiple.
 # export NCCL_SOCKET_IFNAME=bond0
