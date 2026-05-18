@@ -60,7 +60,6 @@ OUTPUT_DIR=${OUTPUT_DIR:-output/gemma4_31b_grpo_translation_judge}
 swift rlhf \
     --rlhf_type grpo \
     --model "${MODEL}" \
-    --template gemma4_nothinking \
     --external_plugins examples/train/grpo/plugin/translation_judge.py \
     --reward_funcs translation_judge \
     --tuner_type full \
@@ -73,13 +72,12 @@ swift rlhf \
     --vllm_mode colocate \
     --vllm_gpu_memory_utilization 0.4 \
     --vllm_tensor_parallel_size 8 \
-    --vllm_max_model_len 4096 \
-    --vllm_engine_kwargs '{"max_num_batched_tokens": 4096}' \
+    --vllm_max_model_len 2048 \
     --dataset "${DATASET}" \
     --load_from_cache_file true \
     --split_dataset_ratio 0 \
-    --max_length 4096 \
-    --max_completion_length 4096 \
+    --max_length 2048 \
+    --max_completion_length 512 \
     --num_generations ${NUM_GENERATIONS} \
     --temperature 1.0 \
     --top_p 0.9 \
