@@ -77,7 +77,7 @@ swift rlhf \
     --load_from_cache_file true \
     --split_dataset_ratio 0 \
     --max_length 4096 \
-    --max_completion_length 2048 \
+    --max_completion_length 4096 \
     --num_generations ${NUM_GENERATIONS} \
     --temperature 1.0 \
     --top_p 0.9 \
