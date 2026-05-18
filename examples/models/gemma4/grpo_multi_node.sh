@@ -73,6 +73,7 @@ swift rlhf \
     --vllm_gpu_memory_utilization 0.4 \
     --vllm_tensor_parallel_size 8 \
     --vllm_max_model_len 4096 \
+    --vllm_engine_kwargs '{"max_num_batched_tokens": 4096}' \
     --dataset "${DATASET}" \
     --load_from_cache_file true \
     --split_dataset_ratio 0 \
