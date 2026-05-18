@@ -77,6 +77,12 @@ export DATASET="${DATASET}"
 ${MODEL:+export MODEL="${MODEL}"}
 ${OUTPUT_DIR:+export OUTPUT_DIR="${OUTPUT_DIR}"}
 ${NUM_GENERATIONS:+export NUM_GENERATIONS="${NUM_GENERATIONS}"}
+${HTTP_PROXY:+export HTTP_PROXY="${HTTP_PROXY}"}
+${HTTPS_PROXY:+export HTTPS_PROXY="${HTTPS_PROXY}"}
+${NO_PROXY:+export NO_PROXY="${NO_PROXY}"}
+${http_proxy:+export http_proxy="${http_proxy}"}
+${https_proxy:+export https_proxy="${https_proxy}"}
+${no_proxy:+export no_proxy="${no_proxy}"}
 nohup bash examples/models/gemma4/grpo_multi_node.sh > "${logfile}" 2>&1 < /dev/null &
 disown || true
 echo "[node ${rank}] started pid \$! -> ${logfile}"

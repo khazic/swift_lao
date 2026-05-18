@@ -256,7 +256,10 @@ class TranslationJudgeReward(AsyncORM):
             groups.append((prompt, grp_completions))
 
         connector = aiohttp.TCPConnector(limit=self.max_concurrency)
-        async with aiohttp.ClientSession(connector=connector) as session:
+        # trust_env=True so aiohttp honors HTTP_PROXY / HTTPS_PROXY / NO_PROXY
+        # from the environment (the cluster may force outbound through a proxy
+        # and we want NO_PROXY=api.360.cn to bypass it).
+        async with aiohttp.ClientSession(connector=connector, trust_env=True) as session:
             tasks = [self._score_group(session, p, c) for p, c in groups]
             results = await asyncio.gather(*tasks)
 
