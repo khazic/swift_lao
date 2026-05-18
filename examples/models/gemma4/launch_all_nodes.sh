@@ -1,12 +1,12 @@
 # One-shot launcher for the 8-node gemma-4-31B GRPO run.
 #
-# Run this on the rank-0 host (10.178.128.118). It will, in order:
+# Run this on the rank-0 host (10.178.128.110). It will, in order:
 #   1. ssh in parallel into the 7 workers.
-#   2. On each worker: cd to the swift checkout, git fetch + reset --hard to
-#      origin/gemma4-rl, export the required env vars, then nohup-launch
-#      grpo_multi_node.sh writing to a per-node log file.
-#   3. Update rank-0 locally the same way, then run grpo_multi_node.sh in the
-#      foreground (so this terminal streams rank-0's output).
+#   2. On each worker: cd to the swift checkout, export the required env
+#      vars, then nohup-launch grpo_multi_node.sh writing to a per-node log
+#      file.
+#   3. Run grpo_multi_node.sh on rank-0 in the foreground (so this terminal
+#      streams rank-0's output).
 #
 # Prerequisites on rank-0 BEFORE running:
 #   - Passwordless ssh from rank-0 to every worker IP (ssh-copy-id).
@@ -26,16 +26,16 @@
 set -euo pipefail
 
 # ---- topology ---------------------------------------------------------------
-MASTER_ADDR=${MASTER_ADDR:-h-liuchonghan-rler-a8nodes-main-m-0.h-liuchonghan-rler-a8nodes-main.hbox-aigc.svc.hbox2-zzzc2-prd.local}
+MASTER_ADDR=${MASTER_ADDR:-10.178.128.110}
 MASTER_PORT=${MASTER_PORT:-29500}
 WORKERS=(
-    10.178.160.208
-    10.178.171.109
-    10.178.159.187
-    10.178.156.133
-    10.178.162.19
-    10.178.143.28
-    10.178.139.42
+    10.178.140.153
+    10.178.160.211
+    10.178.170.158
+    10.178.171.124
+    10.178.159.190
+    10.178.156.154
+    10.178.162.21
 )
 NNODES=$(( ${#WORKERS[@]} + 1 ))
 NPROC_PER_NODE=${NPROC_PER_NODE:-8}
