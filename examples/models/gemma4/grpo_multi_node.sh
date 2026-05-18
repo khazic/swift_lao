@@ -53,7 +53,7 @@ export TRANSLATION_JUDGE_TEMPERATURE=${TRANSLATION_JUDGE_TEMPERATURE:-0.0}
 export TRANSLATION_JUDGE_MAX_CONCURRENCY=${TRANSLATION_JUDGE_MAX_CONCURRENCY:-32}
 
 # ---- paths ------------------------------------------------------------------
-MODEL=${MODEL:-/llm-align/liuchonghan/ckpt_automodel/gemma4_31b_sft_combined/epoch_0_step_13999/model_hf}
+MODEL=${MODEL:-/llm-align/open_models/gemma4/gemma-4-31B-it}
 DATASET=${DATASET:?path to local translation JSONL (messages format)}
 OUTPUT_DIR=${OUTPUT_DIR:-output/gemma4_31b_grpo_translation_judge}
 
