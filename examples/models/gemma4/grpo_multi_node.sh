@@ -59,6 +59,7 @@ OUTPUT_DIR=${OUTPUT_DIR:-output/gemma4_31b_grpo_translation_judge}
 swift rlhf \
     --rlhf_type grpo \
     --model "${MODEL}" \
+    --template gemma4_nothinking \
     --external_plugins examples/train/grpo/plugin/translation_judge.py \
     --reward_funcs translation_judge \
     --tuner_type full \
