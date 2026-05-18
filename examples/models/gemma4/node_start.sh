@@ -18,7 +18,7 @@ JUDGE_ENV=${JUDGE_ENV:-/llm-align/liuchonghan/judge_env.sh}
 source "${JUDGE_ENV}"
 
 export DATASET=${DATASET:-/llm-align/liuchonghan/swift_lao/examples/models/gemma4/translation_train.jsonl}
-export MASTER_ADDR=${MASTER_ADDR:-10.178.128.118}
+export MASTER_ADDR=${MASTER_ADDR:-h-liuchonghan-swift-a8nodes-main-m-0.h-liuchonghan-swift-a8nodes-main.hbox-aigc.svc.hbox2-zzzc2-prd.local}
 export MASTER_PORT=${MASTER_PORT:-8888}
 
 # Auto-detect rank from hostname

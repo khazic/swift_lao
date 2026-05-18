@@ -26,7 +26,7 @@
 set -euo pipefail
 
 # ---- topology ---------------------------------------------------------------
-MASTER_ADDR=${MASTER_ADDR:-10.178.128.110}
+MASTER_ADDR=${MASTER_ADDR:-h-liuchonghan-swift-a8nodes-main-m-0.h-liuchonghan-swift-a8nodes-main.hbox-aigc.svc.hbox2-zzzc2-prd.local}
 MASTER_PORT=${MASTER_PORT:-29500}
 WORKERS=(
     10.178.140.153
