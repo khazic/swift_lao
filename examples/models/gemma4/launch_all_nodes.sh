@@ -63,8 +63,6 @@ build_remote_cmd() {
     cat <<EOF
 set -e
 cd "${SWIFT_DIR}"
-git fetch origin
-git reset --hard "origin/${BRANCH}"
 export MASTER_ADDR="${MASTER_ADDR}"
 export MASTER_PORT="${MASTER_PORT}"
 export NNODES="${NNODES}"
@@ -109,8 +107,6 @@ echo "[launch] all worker ssh sessions returned; training is now running under n
 
 # ---- 2) rank-0 in foreground ------------------------------------------------
 cd "${SWIFT_DIR}"
-git fetch origin
-git reset --hard "origin/${BRANCH}"
 export MASTER_ADDR MASTER_PORT NNODES NPROC_PER_NODE
 export NODE_RANK=0
 export TRANSLATION_JUDGE_API_BASE TRANSLATION_JUDGE_API_KEY TRANSLATION_JUDGE_MODEL
