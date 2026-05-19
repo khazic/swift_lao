@@ -1,11 +1,20 @@
 """Translation-quality LLM-judge reward for GRPO.
 
 The judge is an OpenAI-compatible chat endpoint that takes one prompt plus N
-candidate translations and returns a JSON document containing a per-model score
-in [0, 100], an error analysis, and a ranking. We exploit GRPO's group
-structure: the N completions sampled for one prompt are sent in a single judge
-call as N separate models. This is roughly N times cheaper than scoring each
-completion alone and lets the judge score comparatively.
+candidate translations and returns a JSON document with a per-model score in
+[0, 100]. We exploit GRPO's group structure: the N completions sampled for one
+prompt are sent in a single judge call as N separate models. This is roughly
+N times cheaper than scoring each completion alone and lets the judge score
+them comparatively.
+
+To make the comparative call robust:
+  * Candidate order is shuffled before each call so that judge position bias
+    does not systematically pin the same training sample to model_0.
+  * The judge prompt asks only for the score field (no reason / ranking text),
+    which keeps output tokens small and JSON parsing reliable.
+  * If the comparative call fails after retries, we fall back to N independent
+    per-completion calls before zeroing the group. Otherwise one bad API call
+    would zero out an entire GRPO group and produce zero advantage variance.
 
 Required env vars:
     TRANSLATION_JUDGE_API_BASE        OpenAI-compatible base URL.
@@ -31,6 +40,7 @@ Register name: ``translation_judge``. Use via
 import asyncio
 import json
 import os
+import random
 import re
 import uuid
 from typing import List, Optional
@@ -44,52 +54,31 @@ logger = get_logger()
 
 
 JUDGE_PROMPT_TEMPLATE = """\
-## 任务：你是一名翻译质量诊断专家，你的任务是评判以下几个model翻译后的answer结果质量，需要你输出每个model的翻译评分、翻译评分的原因(reason_a)、指出翻译错误(reason_b)、对几个模型的结果进行综合的评判。
-## 评判说明：
-1、以下input中的prompt是翻译内容及要求，correct_answer是多个模型的翻译结果。
-2、标注几个模型翻译结果中的错误类型，并进行分类。
-2.1 错误类别包括：准确性（误添加、误译、遗漏、未翻译文本）、流畅性（字符编码、语法、不一致、标点、语域、拼写）、风格（尴尬、怪异）、术语（不适合上下文、使用不一致）、未翻译、其他或无错误。
-2.2 每个错误分为两档：重大错误或轻微错误。重大错误会扰乱文本的流畅性，并使文本的可理解性变得困难或不可能。轻微错误是不会显著扰乱流畅性的错误，并且文本试图表达的内容仍然可以理解。
-3、对模型的翻译结果评分：
-3.1 评分规则：参照prompt中的翻译要求以及其他指令要求检查翻译结果是否符合prompt要求、参照翻译结果的错误类别及严重性、以及你作为专业翻译的补充、结合标记出的错误，综合以上对模型的翻译结果进行评分。
-3.2 评分范围：0到100分。评分时需要参考：0="翻译完全错误，没有价值"，33="翻译部分有价值或较多语法错误"，66="翻译大部分有价值或少量语法错误"，最高100="完美的翻译和语法"。
-4、为几个模型的翻译结果进行排名：排名规则：根据评分结果和综合判断，输出多个翻译的排名。
-## 参考人工评测步骤：xxx
-## 输出格式：
-{
-    "case_id": "xxx",
-    "models": [
-        {
-            "answer_id": "xxx",
-            "model_name": "xxx",
-            "score": "xxx",
-            "skill": "xxx",
-            "reason_a": "xxx",
-            "reason_b": "xxx",
-            "extra": [
-                {
-                    "a": "xxx",
-                    "b": "xxx"
-                }
-            ]
-        }
-    ],
-    "notes": [
-        {
-            "model_rank": "xxx",
-            "reason": "xxx"
-        }
-    ]
-}
-### 格式说明：
-1、score：是指裁判给模型结果打分；
-2、reason_a：是指裁判打分的理由
-3、reason_b：是指裁判对于模型回答标记错误的详细说明，需要详细指出具体的错误是哪几个。如果原语言语义不明放弃打分，在此处备注"无效query"
-4、notes：字段model_rank是裁判对多个模型的排名，以及排名的原因（如模型a>模型b>xxx，因为xxx。）。字段reason是裁判对排名第一的模型给出改进的建议。
+## 任务：你是一名翻译质量诊断专家。对 input 中多个 model 的翻译结果进行打分。
+
+## 评判规则（仅用于内部思考，不要输出）：
+1、input 中 prompt 是原文及翻译要求，correct_answer 是多个模型的翻译结果。
+2、按以下维度评估每个模型的翻译质量：
+   - 准确性（误添加、误译、遗漏、未翻译文本）
+   - 流畅性（语法、字符编码、标点、语域、拼写）
+   - 风格（自然度、是否怪异 / 尴尬）
+   - 术语（一致性、上下文匹配）
+3、评分参考：
+   - 0   = 翻译完全错误，没有价值
+   - 33  = 翻译部分有价值或较多语法错误
+   - 66  = 翻译大部分有价值或少量语法错误
+   - 100 = 完美的翻译和语法
+4、综合参照翻译要求、错误类别及严重性、专业翻译标准，给出 0-100 分。
+5、即使原文语义模糊，也要按模型的实际表现打分，不要拒绝评分。
+
+## 输出格式（严格 JSON，仅输出以下结构；不要任何额外文字、不要代码块包裹）：
+{"models": [{"model_name": "model_0", "score": 85}, {"model_name": "model_1", "score": 60}]}
+
 ## 输出要求：
-1、严格按输出格式进行输出，不要在输出json格式以外解释任何信息，也不要输出其他与格式无关的任何解释、说明等内容。代码块也不要出现"```json"。
-2、input当中有几个model_name的answer，在输出中就要有对应数量的模型平分。
-3、当原语言表述不清、语义模糊时，不再进行翻译质量判断。
+1、严格按上述 JSON 输出，不输出任何解释、说明、思考过程或代码块。
+2、input 中有几个 model_name，输出的 models 数组必须有相同数量，model_name 与 input 中完全一致。
+3、score 必须是 0-100 之间的数字（整数或浮点）。
+
 ## input：__JUDGE_INPUT_PAYLOAD__
 """
 
@@ -190,9 +179,17 @@ class TranslationJudgeReward(AsyncORM):
         return out
 
     async def _score_group(self, session: aiohttp.ClientSession, prompt: str,
-                           completions: List[str]) -> List[float]:
+                           completions: List[str], allow_split: bool = True) -> List[float]:
         n = len(completions)
-        user_input = self._build_input_payload(prompt, completions)
+        # Shuffle candidate order so judge position-bias does not always pin
+        # the same training sample to e.g. model_0. `indices[j]` is the
+        # original index of whatever ends up at shuffled position j.
+        indices = list(range(n))
+        if n > 1:
+            random.shuffle(indices)
+        shuffled = [completions[indices[j]] for j in range(n)]
+
+        user_input = self._build_input_payload(prompt, shuffled)
         user_message = JUDGE_PROMPT_TEMPLATE.replace('__JUDGE_INPUT_PAYLOAD__', user_input)
         payload = {
             'model': self.model_name,
@@ -223,14 +220,33 @@ class TranslationJudgeReward(AsyncORM):
                     last_err = f'unparseable judge response: {content[:200]!r}'
                     logger.warning(last_err)
                     continue
-                return [self.fallback_reward if s is None else max(0.0, min(1.0, s / 100.0))
-                        for s in scores]
+                # scores[j] is the score for model_j == shuffled position j;
+                # map back to original completion order.
+                unshuffled: List[float] = [self.fallback_reward] * n
+                for j, orig in enumerate(indices):
+                    s = scores[j]
+                    if s is not None:
+                        unshuffled[orig] = max(0.0, min(1.0, s / 100.0))
+                return unshuffled
             except asyncio.TimeoutError:
                 last_err = 'timeout'
                 logger.warning('judge call timed out')
             except Exception as e:
                 last_err = str(e)
                 logger.warning(f'judge call error: {e}')
+
+        # Comparative call failed. Fall back to per-completion scoring before
+        # giving up: one bad API call would otherwise zero an entire GRPO
+        # group and produce zero advantage variance.
+        if allow_split and n > 1:
+            logger.warning(
+                f'judge group failed after {self.max_retries + 1} attempts ({last_err}); '
+                f'falling back to {n} per-completion judge calls')
+            per_calls = await asyncio.gather(*[
+                self._score_group(session, prompt, [c], allow_split=False) for c in completions
+            ])
+            return [r[0] for r in per_calls]
+
         logger.warning(f'judge group failed after {self.max_retries + 1} attempts: {last_err}')
         return [self.fallback_reward] * n
 
