@@ -72,13 +72,13 @@ swift rlhf \
     --vllm_mode colocate \
     --vllm_gpu_memory_utilization 0.4 \
     --vllm_tensor_parallel_size 8 \
-    --vllm_max_model_len 2048 \
-    --vllm_engine_kwargs '{"max_num_batched_tokens": 2560}' \
+    --vllm_max_model_len 4096 \
+    --vllm_engine_kwargs '{"max_num_batched_tokens": 4096}' \
     --vllm_limit_mm_per_prompt '{"image": 1, "video": 1}' \
     --dataset "${DATASET}" \
     --load_from_cache_file true \
     --split_dataset_ratio 0 \
-    --max_length 2048 \
+    --max_length 8192 \
     --max_completion_length 512 \
     --num_generations ${NUM_GENERATIONS} \
     --temperature 1.0 \
@@ -87,11 +87,11 @@ swift rlhf \
     --per_device_train_batch_size ${NUM_GENERATIONS} \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-6 \
-    --warmup_ratio 0.03 \
+    --warmup_ratio 0.05 \
     --num_train_epochs 1 \
     --logging_steps 1 \
     --save_strategy steps \
-    --save_steps 100 \
+    --save_steps 50 \
     --save_total_limit 20 \
     --eval_strategy no \
     --output_dir "${OUTPUT_DIR}" \
