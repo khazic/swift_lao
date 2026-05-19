@@ -26,16 +26,12 @@
 set -euo pipefail
 
 # ---- topology ---------------------------------------------------------------
-MASTER_ADDR=${MASTER_ADDR:-h-liuchonghan-swift-a8nodes-main-m-0.h-liuchonghan-swift-a8nodes-main.hbox-aigc.svc.hbox2-zzzc2-prd.local}
+MASTER_ADDR=${MASTER_ADDR:-10.178.128.125}
 MASTER_PORT=${MASTER_PORT:-29500}
 WORKERS=(
-    10.178.140.153
-    10.178.160.211
-    10.178.170.158
-    10.178.171.124
-    10.178.159.190
-    10.178.156.154
-    10.178.162.21
+    10.178.140.140
+    10.178.160.214
+    10.178.171.122
 )
 NNODES=$(( ${#WORKERS[@]} + 1 ))
 NPROC_PER_NODE=${NPROC_PER_NODE:-8}
