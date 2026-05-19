@@ -92,7 +92,7 @@ swift rlhf \
     --logging_steps 1 \
     --save_strategy steps \
     --save_steps 100 \
-    --save_total_limit 3 \
+    --save_total_limit 20 \
     --eval_strategy no \
     --output_dir "${OUTPUT_DIR}" \
     --dataloader_num_workers 2 \
