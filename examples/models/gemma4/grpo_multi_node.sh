@@ -84,7 +84,7 @@ swift rlhf \
     --temperature 1.0 \
     --top_p 0.9 \
     --beta 0.0 \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size ${NUM_GENERATIONS} \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-6 \
     --warmup_ratio 0.03 \
