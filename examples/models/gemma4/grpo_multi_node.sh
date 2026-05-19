@@ -83,6 +83,7 @@ swift rlhf \
     --num_generations ${NUM_GENERATIONS} \
     --temperature 1.0 \
     --top_p 0.9 \
+    --enable_thinking false \
     --beta 0.0 \
     --per_device_train_batch_size ${NUM_GENERATIONS} \
     --gradient_accumulation_steps 1 \
