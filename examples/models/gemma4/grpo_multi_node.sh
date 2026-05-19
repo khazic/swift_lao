@@ -74,6 +74,7 @@ swift rlhf \
     --vllm_tensor_parallel_size 8 \
     --vllm_max_model_len 2048 \
     --vllm_engine_kwargs '{"max_num_batched_tokens": 2560}' \
+    --vllm_limit_mm_per_prompt '{"image": 1, "video": 1}' \
     --dataset "${DATASET}" \
     --load_from_cache_file true \
     --split_dataset_ratio 0 \
