@@ -4,6 +4,11 @@
 #   *-m-0  -> rank 0 (master, runs in foreground)
 #   *-w-N  -> rank N+1 (worker, runs in background under nohup)
 #
+# NOTE: After parking the original main-m-0 (hardware fault), a worker node
+# is now acting as rank 0. The hostname-based auto-detect below will be wrong
+# on the new master — manually `export NODE_RANK=0` before running this on
+# the new master, or use launch_all_nodes.sh which sets NODE_RANK explicitly.
+#
 # Required env (already in /llm-align/liuchonghan/judge_env.sh on shared FS):
 #   TRANSLATION_JUDGE_API_BASE / API_KEY / MODEL
 #
@@ -18,7 +23,7 @@ JUDGE_ENV=${JUDGE_ENV:-/llm-align/liuchonghan/judge_env.sh}
 source "${JUDGE_ENV}"
 
 export DATASET=${DATASET:-/llm-align/liuchonghan/swift_lao/examples/models/gemma4/translation_train.jsonl}
-export MASTER_ADDR=${MASTER_ADDR:-h-liuchonghan-swift-a8nodes-main-m-0.h-liuchonghan-swift-a8nodes-main.hbox-aigc.svc.hbox2-zzzc2-prd.local}
+export MASTER_ADDR=${MASTER_ADDR:-10.178.140.140}
 export MASTER_PORT=${MASTER_PORT:-8888}
 
 # Auto-detect rank from hostname

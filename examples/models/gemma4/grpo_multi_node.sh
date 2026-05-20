@@ -1,5 +1,6 @@
 # Multi-node GRPO for gemma-4-31B-it with LLM-as-judge translation reward.
-# Topology: 8 nodes x 8 A100 80G = 64 GPUs.
+# Topology: 3 nodes x 8 A100 80G = 24 GPUs.
+# (Original 4-node setup; main-m-0 parked due to GPU hardware faults.)
 #
 # Run instructions (on EVERY node, in order):
 #

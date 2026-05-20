@@ -1,14 +1,15 @@
-# Kill the 8-node GRPO run on every host.
+# Kill the 3-node GRPO run on every host.
 #
-# Run on the rank-0 host. Hits the worker IPs over ssh and pkills any
-# `swift rlhf` or `grpo_multi_node` process, plus the local one on rank-0.
+# Run on the rank-0 host (10.178.140.140). Hits the worker IPs over ssh and
+# pkills any `swift rlhf` or `grpo_multi_node` process, plus the local one
+# on rank-0.
 
 set -uo pipefail
 
 WORKERS=(
-    10.178.140.140
     10.178.160.214
     10.178.171.122
+    # 10.178.128.125  # disabled: GPU2 ECC uncorrectable + GPU6 Xid 31
 )
 SSH_USER=${SSH_USER:-root}
 

@@ -1,6 +1,6 @@
 # One-shot launcher for the 8-node gemma-4-31B GRPO run.
 #
-# Run this on the rank-0 host (10.178.128.110). It will, in order:
+# Run this on the rank-0 host (10.178.140.140). It will, in order:
 #   1. ssh in parallel into the 7 workers.
 #   2. On each worker: cd to the swift checkout, export the required env
 #      vars, then nohup-launch grpo_multi_node.sh writing to a per-node log
@@ -26,12 +26,15 @@
 set -euo pipefail
 
 # ---- topology ---------------------------------------------------------------
-MASTER_ADDR=${MASTER_ADDR:-10.178.128.125}
+# NOTE: 10.178.128.125 (original main-m-0) is parked due to hardware faults on
+# GPU2 (17 DRAM uncorrectable ECC) and GPU6 (Xid 31 MMU fault). Re-add it once
+# the platform has swapped/repaired the bad cards. Current cluster: 3 nodes.
+MASTER_ADDR=${MASTER_ADDR:-10.178.140.140}
 MASTER_PORT=${MASTER_PORT:-29500}
 WORKERS=(
-    10.178.140.140
     10.178.160.214
     10.178.171.122
+    # 10.178.128.125  # disabled: GPU2 ECC uncorrectable + GPU6 Xid 31
 )
 NNODES=$(( ${#WORKERS[@]} + 1 ))
 NPROC_PER_NODE=${NPROC_PER_NODE:-8}
