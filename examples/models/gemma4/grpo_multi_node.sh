@@ -86,8 +86,8 @@ swift rlhf \
     --top_p 0.9 \
     --enable_thinking false \
     --beta 0.0 \
-    --per_device_train_batch_size 2 \
-    --gradient_accumulation_steps 2 \
+    --per_device_train_batch_size 4 \
+    --gradient_accumulation_steps 4 \
     --learning_rate 1e-6 \
     --warmup_ratio 0.05 \
     --num_train_epochs 1 \
