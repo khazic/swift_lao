@@ -1,20 +1,11 @@
 """Translation-quality LLM-judge reward for GRPO.
 
-The judge is an OpenAI-compatible chat endpoint that takes one prompt plus N
-candidate translations and returns a JSON document with a per-model score in
-[0, 100]. We exploit GRPO's group structure: the N completions sampled for one
-prompt are sent in a single judge call as N separate models. This is roughly
-N times cheaper than scoring each completion alone and lets the judge score
-them comparatively.
-
-To make the comparative call robust:
-  * Candidate order is shuffled before each call so that judge position bias
-    does not systematically pin the same training sample to model_0.
-  * The judge prompt asks only for the score field (no reason / ranking text),
-    which keeps output tokens small and JSON parsing reliable.
-  * If the comparative call fails after retries, we fall back to N independent
-    per-completion calls before zeroing the group. Otherwise one bad API call
-    would zero out an entire GRPO group and produce zero advantage variance.
+The judge is an OpenAI-compatible chat endpoint that takes one prompt plus one
+candidate translation and returns a JSON document with a score in [0, 100].
+Each completion is scored independently in its own judge call, which keeps the
+input short and lets the judge focus on a single candidate at a time. The
+judge prompt asks only for the score field (no reason / ranking text), which
+keeps output tokens small and JSON parsing reliable.
 
 Required env vars:
     TRANSLATION_JUDGE_API_BASE        OpenAI-compatible base URL.
@@ -54,11 +45,11 @@ logger = get_logger()
 
 
 JUDGE_PROMPT_TEMPLATE = """\
-## 任务：你是一名翻译质量诊断专家。对 input 中多个 model 的翻译结果进行打分。
+## 任务：你是一名翻译质量诊断专家。对一条翻译结果进行打分。
 
 ## 评判规则（仅用于内部思考，不要输出）：
-1、input 中 prompt 是原文及翻译要求，correct_answer 是多个模型的翻译结果。
-2、按以下维度评估每个模型的翻译质量：
+1、input 中 prompt 是原文及翻译要求，correct_answer 是模型的翻译结果。
+2、按以下维度评估翻译质量：
    - 准确性（误添加、误译、遗漏、未翻译文本）
    - 流畅性（语法、字符编码、标点、语域、拼写）
    - 风格（自然度、是否怪异 / 尴尬）
@@ -72,11 +63,11 @@ JUDGE_PROMPT_TEMPLATE = """\
 5、即使原文语义模糊，也要按模型的实际表现打分，不要拒绝评分。
 
 ## 输出格式（严格 JSON，仅输出以下结构；不要任何额外文字、不要代码块包裹）：
-{"models": [{"model_name": "model_0", "score": 85}, {"model_name": "model_1", "score": 60}]}
+{"models": [{"model_name": "model_0", "score": 85}]}
 
 ## 输出要求：
 1、严格按上述 JSON 输出，不输出任何解释、说明、思考过程或代码块。
-2、input 中有几个 model_name，输出的 models 数组必须有相同数量，model_name 与 input 中完全一致。
+2、models 数组只包含一个元素，model_name 固定为 "model_0"。
 3、score 必须是 0-100 之间的数字（整数或浮点）。
 
 ## input：__JUDGE_INPUT_PAYLOAD__
@@ -257,19 +248,14 @@ class TranslationJudgeReward(AsyncORM):
         if self._semaphore is None:
             self._semaphore = asyncio.Semaphore(self.max_concurrency)
 
-        group_size = self.num_generations
-        if n % group_size != 0:
-            logger.warning(
-                f'completions length {n} is not divisible by num_generations '
-                f'{group_size}; falling back to per-completion scoring.')
-            group_size = 1
-
+        # Per-completion scoring: one judge call per completion.
+        # Why: with large num_generations the comparative call carries N long
+        # candidates, risks output truncation, and tends to compress scores
+        # across the group, hurting advantage variance.
         groups = []
-        for start in range(0, n, group_size):
-            grp_messages = messages[start]
-            prompt = self._last_user_content(grp_messages)
-            grp_completions = completions[start:start + group_size]
-            groups.append((prompt, grp_completions))
+        for i in range(n):
+            prompt = self._last_user_content(messages[i])
+            groups.append((prompt, [completions[i]]))
 
         connector = aiohttp.TCPConnector(limit=self.max_concurrency)
         # trust_env=True so aiohttp honors HTTP_PROXY / HTTPS_PROXY / NO_PROXY
