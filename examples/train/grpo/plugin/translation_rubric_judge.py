@@ -151,6 +151,24 @@ class TranslationRubricJudgeReward(AsyncORM):
         return ''
 
     @staticmethod
+    def _strip_chat_artifacts(text: str) -> str:
+        # The SFT base uses a harmony-style chat template whose end-of-turn
+        # token decodes to the literal string "<turn|>". Without stripping
+        # it (and any trailing channel/turn fragments) the judge sees the
+        # tokens as non-translation content and dings pure_translation.
+        # Truncate at the first end-of-turn marker, then drop any stray
+        # template markers that leak through.
+        cut = re.split(r'<turn\|>|<eos>', text, maxsplit=1)[0]
+        cut = re.sub(
+            r'<\|(?:turn|channel|think|tool_call|tool|tool_response|audio|image)>'
+            r'|<(?:channel|tool_call|tool|tool_response|audio|image)\|>'
+            r'|<(?:bos|eos|pad|unk|mask)>',
+            '',
+            cut,
+        )
+        return cut.strip()
+
+    @staticmethod
     def _build_input_payload(prompt: str, completion: str) -> str:
         payload = {
             'case_id': uuid.uuid4().hex[:12],
@@ -200,6 +218,7 @@ class TranslationRubricJudgeReward(AsyncORM):
 
     async def _score_one(self, session: aiohttp.ClientSession, prompt: str,
                          completion: str) -> float:
+        completion = self._strip_chat_artifacts(completion)
         user_input = self._build_input_payload(prompt, completion)
         user_message = JUDGE_PROMPT_TEMPLATE.replace('__JUDGE_INPUT_PAYLOAD__', user_input)
         payload = {
