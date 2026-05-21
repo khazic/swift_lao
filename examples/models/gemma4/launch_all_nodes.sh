@@ -13,10 +13,10 @@
 #   - Same swift_lao checkout path on every node (shared FS is easiest).
 #   - Each node already has `swift` importable (pip install -e ".[all]" done).
 #   - These env vars are exported in the current shell:
-#         TRANSLATION_JUDGE_API_BASE  e.g. https://api.360.cn/v1
-#         TRANSLATION_JUDGE_API_KEY   judge bearer token
-#         TRANSLATION_JUDGE_MODEL     e.g. deepseek/deepseek-v4-pro
-#         DATASET                     /path/to/translation_train.jsonl
+#         TRANSLATION_RUBRIC_JUDGE_API_BASE  e.g. https://api.360.cn/v1
+#         TRANSLATION_RUBRIC_JUDGE_API_KEY   judge bearer token
+#         TRANSLATION_RUBRIC_JUDGE_MODEL     e.g. deepseek/deepseek-v4-pro
+#         DATASET                            /path/to/translation_train.jsonl
 #     Optional: MODEL, OUTPUT_DIR, NUM_GENERATIONS, SSH_USER, BRANCH.
 #
 # Logs go to ${LOG_DIR:-${SWIFT_DIR}/logs/grpo_<timestamp>}/node_<rank>.log.
@@ -46,9 +46,9 @@ LOG_DIR=${LOG_DIR:-${SWIFT_DIR}/logs/grpo_$(date +%Y%m%d_%H%M%S)}
 SSH_USER=${SSH_USER:-root}
 
 # ---- required env on rank-0 -------------------------------------------------
-: "${TRANSLATION_JUDGE_API_BASE:?export TRANSLATION_JUDGE_API_BASE first}"
-: "${TRANSLATION_JUDGE_API_KEY:?export TRANSLATION_JUDGE_API_KEY first}"
-: "${TRANSLATION_JUDGE_MODEL:?export TRANSLATION_JUDGE_MODEL first}"
+: "${TRANSLATION_RUBRIC_JUDGE_API_BASE:?export TRANSLATION_RUBRIC_JUDGE_API_BASE first}"
+: "${TRANSLATION_RUBRIC_JUDGE_API_KEY:?export TRANSLATION_RUBRIC_JUDGE_API_KEY first}"
+: "${TRANSLATION_RUBRIC_JUDGE_MODEL:?export TRANSLATION_RUBRIC_JUDGE_MODEL first}"
 : "${DATASET:?export DATASET first}"
 
 mkdir -p "${LOG_DIR}"
@@ -67,9 +67,9 @@ export MASTER_PORT="${MASTER_PORT}"
 export NNODES="${NNODES}"
 export NPROC_PER_NODE="${NPROC_PER_NODE}"
 export NODE_RANK="${rank}"
-export TRANSLATION_JUDGE_API_BASE="${TRANSLATION_JUDGE_API_BASE}"
-export TRANSLATION_JUDGE_API_KEY="${TRANSLATION_JUDGE_API_KEY}"
-export TRANSLATION_JUDGE_MODEL="${TRANSLATION_JUDGE_MODEL}"
+export TRANSLATION_RUBRIC_JUDGE_API_BASE="${TRANSLATION_RUBRIC_JUDGE_API_BASE}"
+export TRANSLATION_RUBRIC_JUDGE_API_KEY="${TRANSLATION_RUBRIC_JUDGE_API_KEY}"
+export TRANSLATION_RUBRIC_JUDGE_MODEL="${TRANSLATION_RUBRIC_JUDGE_MODEL}"
 export DATASET="${DATASET}"
 ${MODEL:+export MODEL="${MODEL}"}
 ${OUTPUT_DIR:+export OUTPUT_DIR="${OUTPUT_DIR}"}
@@ -108,7 +108,7 @@ echo "[launch] all worker ssh sessions returned; training is now running under n
 cd "${SWIFT_DIR}"
 export MASTER_ADDR MASTER_PORT NNODES NPROC_PER_NODE
 export NODE_RANK=0
-export TRANSLATION_JUDGE_API_BASE TRANSLATION_JUDGE_API_KEY TRANSLATION_JUDGE_MODEL
+export TRANSLATION_RUBRIC_JUDGE_API_BASE TRANSLATION_RUBRIC_JUDGE_API_KEY TRANSLATION_RUBRIC_JUDGE_MODEL
 export DATASET
 echo "[launch] starting rank 0 in foreground; rank>=1 logs at ${LOG_DIR}/node_<rank>.log"
 bash examples/models/gemma4/grpo_multi_node.sh 2>&1 | tee "${LOG_DIR}/node_0.log"
