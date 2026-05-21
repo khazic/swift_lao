@@ -7,7 +7,7 @@ decisions and a more discriminative aggregate reward, which helps avoid the
 "judge regresses everything to 80-90" failure mode of scalar scoring.
 
 Aggregate range: 0..MAX_SCORE, normalized to [0, 1]. With the default rubric
-(2+2+2+1+1=8) the reward lives on a 9-level discrete grid.
+(2+2+2+2+1+1=10) the reward lives on an 11-level discrete grid.
 
 Required env vars:
     TRANSLATION_RUBRIC_JUDGE_API_BASE        OpenAI-compatible base URL.
@@ -48,6 +48,7 @@ RUBRIC_ITEMS: List[Tuple[str, int]] = [
     ('completeness', 2),
     ('accuracy', 2),
     ('grammar', 2),
+    ('fluency', 2),
     ('terminology', 1),
     ('pure_translation', 1),
 ]
@@ -63,8 +64,12 @@ JUDGE_PROMPT_TEMPLATE = """\
 
 ## 特殊规则：源语言与目标语言一致时
 1. 如果 prompt 要求翻译为某语言（例如要求翻译为中文），而待翻译的源文本本身就是该语言（例如源文本就是中文），那么模型逐字原样输出源文本即视为完美翻译。
-2. 这种情况下五个维度全部按满分计：completeness=2, accuracy=2, grammar=2, terminology=1, pure_translation=1（总分 8/8）。
+2. 这种情况下六个维度全部按满分计：completeness=2, accuracy=2, grammar=2, fluency=2, terminology=1, pure_translation=1（总分 10/10）。
 3. 若模型在此场景下没有逐字输出而是做了改写、翻译或添加解释，按改写后的实际质量打分，不享受满分待遇。
+
+## 通用判官指令
+1. 即使原文语义模糊、含糊不清或难以判断，也必须按模型输出的实际表现给出分数，禁止拒绝评分或返回空字段。
+2. 评分时综合考虑错误的类别和严重程度：重大语义错误显著扣分，细微瑕疵小幅扣分。
 
 ## 评分项（每项独立判断，相互不影响）：
 
@@ -83,16 +88,21 @@ JUDGE_PROMPT_TEMPLATE = """\
    - 1 = 个别小瑕疵
    - 2 = 语法正确，无乱码
 
-4. terminology（术语）：专有名词、习语、行业术语是否准确一致？
+4. fluency（流畅性与风格）：读起来是否自然、地道，标点和语域是否得当？
+   - 0 = 别扭、生硬、机翻味重，或标点/语域明显不合适
+   - 1 = 基本通顺，但有局部不自然或语域偏差
+   - 2 = 自然流畅，标点和语域贴合目标语言习惯
+
+5. terminology（术语）：专有名词、习语、行业术语是否准确一致？
    - 0 = 术语错译或前后不一致
    - 1 = 术语正确
 
-5. pure_translation（纯翻译输出）：输出是否只是翻译本身？
+6. pure_translation（纯翻译输出）：输出是否只是翻译本身？
    - 0 = 含有模型解释、评论、Markdown 标题、拒绝、反问等额外内容
    - 1 = 仅翻译内容
 
 ## 输出格式（严格 JSON，仅输出以下结构；不要任何额外文字、不要代码块包裹）：
-{"rubric": {"completeness": 2, "accuracy": 2, "grammar": 2, "terminology": 1, "pure_translation": 1}}
+{"rubric": {"completeness": 2, "accuracy": 2, "grammar": 2, "fluency": 2, "terminology": 1, "pure_translation": 1}}
 
 ## 输出要求：
 1. 严格按上述 JSON 输出，不输出任何解释或思考过程。
