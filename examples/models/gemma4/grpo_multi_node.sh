@@ -12,10 +12,10 @@
 #        export MASTER_ADDR=<hostname-or-IP of NODE_RANK=0, reachable from all>
 #        # Typically: main-m-0
 #
-#   3. Provide the judge API credentials (same values on all 8 nodes):
-#        export TRANSLATION_JUDGE_API_BASE=https://your-judge.example.com
-#        export TRANSLATION_JUDGE_API_KEY=sk-xxx
-#        export TRANSLATION_JUDGE_MODEL=your-judge-model
+#   3. Provide the judge API credentials (same values on all nodes):
+#        export TRANSLATION_RUBRIC_JUDGE_API_BASE=https://your-judge.example.com
+#        export TRANSLATION_RUBRIC_JUDGE_API_KEY=sk-xxx
+#        export TRANSLATION_RUBRIC_JUDGE_MODEL=your-judge-model
 #
 #   4. Provide the dataset path (same value on all 8 nodes):
 #        export DATASET=/path/to/translation_train.jsonl
@@ -44,14 +44,13 @@ export VLLM_DISABLE_FLASHINFER_ALLREDUCE=1
 # export NCCL_IB_DISABLE=0
 
 # ---- judge API --------------------------------------------------------------
-: "${TRANSLATION_JUDGE_API_BASE:?set to your judge endpoint base url}"
-: "${TRANSLATION_JUDGE_API_KEY:?set to the judge api key}"
-: "${TRANSLATION_JUDGE_MODEL:?set to the judge model name}"
+: "${TRANSLATION_RUBRIC_JUDGE_API_BASE:?set to your judge endpoint base url}"
+: "${TRANSLATION_RUBRIC_JUDGE_API_KEY:?set to the judge api key}"
+: "${TRANSLATION_RUBRIC_JUDGE_MODEL:?set to the judge model name}"
 export NUM_GENERATIONS=${NUM_GENERATIONS:-16}
-export TRANSLATION_JUDGE_NUM_GENERATIONS=${NUM_GENERATIONS}
-export TRANSLATION_JUDGE_TIMEOUT=${TRANSLATION_JUDGE_TIMEOUT:-180}
-export TRANSLATION_JUDGE_TEMPERATURE=${TRANSLATION_JUDGE_TEMPERATURE:-0.0}
-export TRANSLATION_JUDGE_MAX_CONCURRENCY=${TRANSLATION_JUDGE_MAX_CONCURRENCY:-64}
+export TRANSLATION_RUBRIC_JUDGE_TIMEOUT=${TRANSLATION_RUBRIC_JUDGE_TIMEOUT:-180}
+export TRANSLATION_RUBRIC_JUDGE_TEMPERATURE=${TRANSLATION_RUBRIC_JUDGE_TEMPERATURE:-0.0}
+export TRANSLATION_RUBRIC_JUDGE_MAX_CONCURRENCY=${TRANSLATION_RUBRIC_JUDGE_MAX_CONCURRENCY:-64}
 
 # ---- paths ------------------------------------------------------------------
 MODEL=${MODEL:-/llm-align/open_models/gemma4/gemma-4-31B-it}
@@ -61,8 +60,8 @@ OUTPUT_DIR=${OUTPUT_DIR:-output/gemma4_31b_grpo_translation_judge}
 swift rlhf \
     --rlhf_type grpo \
     --model "${MODEL}" \
-    --external_plugins examples/train/grpo/plugin/translation_judge.py \
-    --reward_funcs translation_judge \
+    --external_plugins examples/train/grpo/plugin/translation_rubric_judge.py \
+    --reward_funcs translation_rubric_judge \
     --tuner_type full \
     --freeze_vit true \
     --freeze_aligner true \
