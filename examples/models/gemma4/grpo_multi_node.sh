@@ -47,11 +47,11 @@ export VLLM_DISABLE_FLASHINFER_ALLREDUCE=1
 : "${TRANSLATION_JUDGE_API_BASE:?set to your judge endpoint base url}"
 : "${TRANSLATION_JUDGE_API_KEY:?set to the judge api key}"
 : "${TRANSLATION_JUDGE_MODEL:?set to the judge model name}"
-export NUM_GENERATIONS=${NUM_GENERATIONS:-4}
+export NUM_GENERATIONS=${NUM_GENERATIONS:-16}
 export TRANSLATION_JUDGE_NUM_GENERATIONS=${NUM_GENERATIONS}
 export TRANSLATION_JUDGE_TIMEOUT=${TRANSLATION_JUDGE_TIMEOUT:-180}
 export TRANSLATION_JUDGE_TEMPERATURE=${TRANSLATION_JUDGE_TEMPERATURE:-0.0}
-export TRANSLATION_JUDGE_MAX_CONCURRENCY=${TRANSLATION_JUDGE_MAX_CONCURRENCY:-32}
+export TRANSLATION_JUDGE_MAX_CONCURRENCY=${TRANSLATION_JUDGE_MAX_CONCURRENCY:-64}
 
 # ---- paths ------------------------------------------------------------------
 MODEL=${MODEL:-/llm-align/open_models/gemma4/gemma-4-31B-it}
@@ -86,8 +86,8 @@ swift rlhf \
     --top_p 0.9 \
     --enable_thinking false \
     --beta 0.0 \
-    --per_device_train_batch_size ${NUM_GENERATIONS} \
-    --gradient_accumulation_steps 1 \
+    --per_device_train_batch_size 2 \
+    --gradient_accumulation_steps 2 \
     --learning_rate 1e-6 \
     --warmup_ratio 0.05 \
     --num_train_epochs 1 \
